@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS `userinfo` (
+  `uid`         INTEGER PRIMARY KEY AUTOINCREMENT,
+  `username`    VARCHAR(64) NULL,
+  `last_join`   DATETIME    NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `last_part`   DATETIME    NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `last_active` DATETIME    NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `first_seen`  DATETIME    NOT NULL DEFAULT '0000-00-00 00:00:00'
+);
+CREATE UNIQUE INDEX IF NOT EXISTS `usernameUnique`
+  ON userinfo (`username`);

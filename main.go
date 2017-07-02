@@ -5,11 +5,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strings"
-	"math/rand"
 	"time"
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
+	"github.com/3stadt/GoTBot/src/handlers"
 )
 
 const channel = "#3stadt"
@@ -21,9 +21,8 @@ var sqlite *sql.DB
 var sqliteError error
 
 var commandMap = map[string]func(channel string, sender string, params string, connection *irc.Connection){
-	"goSay":   echo,
-	"slap":    slap,
-	"klatsch": slap,
+	"goSay":   handlers.Echo,
+	"slap":    handlers.Slap,
 }
 
 type User struct {
@@ -178,34 +177,6 @@ func initDB() {
 	_, err = sqlite.Exec(string(sqlStmt))
 	checkErr(err)
 	closeDB()
-}
-
-func echo(channel string, sender string, params string, connection *irc.Connection) {
-	connection.Privmsg(channel, "Thanks's for sending goSay with '"+params+"' on "+channel+", "+sender+"!")
-}
-
-func slap(channel string, sender string, params string, connection *irc.Connection) {
-	victim := strings.TrimSpace(params)
-	if len(params) < 1 || strings.ContainsAny(victim, " ") {
-		return
-	}
-
-	if victim == "himself" || victim == "herself" || victim == "itself" {
-		connection.Privmsg(channel, "/me slaps "+sender+" playfully around with the mighty banhammer...")
-		return
-	}
-
-	rand.Seed(time.Now().Unix())
-	objects := []string{
-		"a large trout",
-		"no visible result",
-		"the largest trout ever seen",
-		"a barbie doll",
-		"a blood stained sack",
-		"a chainsaw",
-	}
-	n := rand.Int() % len(objects)
-	connection.Privmsg(channel, sender+" slaps "+victim+" around a bit with "+objects[n]+"!")
 }
 
 func openDB() {

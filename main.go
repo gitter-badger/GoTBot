@@ -5,43 +5,37 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strings"
-	"time"
-	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	"io/ioutil"
 	"github.com/3stadt/GoTBot/src/handlers"
+	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/src/bolt"
+	"time"
+	"github.com/joho/godotenv"
+	"log"
 )
 
-const channel = "#3stadt"
+var conf map[string]string
 const serverSSL = "irc.chat.twitch.tv:443"
-const botnick = "3stadt"
-const sqliteFileName = "data.sqlite"
-
-var sqlite *sql.DB
-var sqliteError error
 
 var commandMap = map[string]func(channel string, sender string, params string, connection *irc.Connection){
 	"goSay":   handlers.Echo,
 	"slap":    handlers.Slap,
 }
 
-type User struct {
-	id         int
-	name       string
-	lastJoin   time.Time
-	lastPart   time.Time
-	lastActive time.Time
-	firstSeen  time.Time
-}
-
 func main() {
-	oauth, err := ioutil.ReadFile(".oauth") // just pass the file name
+	var err error
+	conf, err = godotenv.Read()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	channel := "#" + conf["TWITCH_CHANNEL"]
+	botnick := conf["TWITCH_USER"]
+	oauth := conf["OAUTH"]
 	checkErr(err)
 	oauthString := strings.TrimSpace(string(oauth))
-	initDB()
 	connection := irc.IRC(botnick, botnick)
-	connection.VerboseCallbackHandler = false
-	connection.Debug = false
+	connection.VerboseCallbackHandler = true
+	connection.Debug = true
 	connection.UseTLS = true
 	connection.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	connection.Password = oauthString
@@ -55,26 +49,29 @@ func main() {
 		if e.Nick == botnick {
 			return
 		}
-		openDB()
-		logPart(e.Nick)
-		closeDB()
+		bolt.CreateOrUpdateUser(structs.User{
+			Name: e.Nick,
+			LastPart: time.Now(),
+		})
 	})
 	connection.AddCallback("JOIN", func(e *irc.Event) {
 		if e.Nick == botnick {
 			return
 		}
-		openDB()
-		logJoin(e.Nick)
-		closeDB()
+		bolt.CreateOrUpdateUser(structs.User{
+			Name: e.Nick,
+			LastJoin: time.Now(),
+		})
 	})
 
 	connection.AddCallback("PRIVMSG", func(e *irc.Event) {
 		if e.Nick == botnick {
 			return
 		}
-		openDB()
-		logActive(e.Nick)
-		closeDB()
+		bolt.CreateOrUpdateUser(structs.User{
+			Name: e.Nick,
+			LastActive: time.Now(),
+		})
 		message := e.Message()
 		if len(message) > 1 && strings.HasPrefix(message, "!") {
 			i := strings.Index(message, " ")
@@ -93,13 +90,7 @@ func main() {
 			}
 
 			if _, ok := commandMap[command]; ok {
-				openDB()
-				user := getUserData(sender)
-				if user.id == 0 {
-					initUser(sender)
-				}
 				commandMap[command](channel, sender, params, connection)
-				closeDB()
 			}
 
 		}
@@ -113,86 +104,8 @@ func main() {
 	connection.Loop()
 }
 
-func logActive(username string) {
-	updateUserTime(username, "last_part")
-}
-
-func logPart(username string) {
-	updateUserTime(username, "last_active")
-}
-
-func logJoin(username string) {
-	updateUserTime(username, "last_join")
-}
-
-func updateUserTime(username string, field string) {
-	username = strings.TrimSpace(username)
-	user := getUserData(username)
-	if user.id == 0 {
-		initUser(username)
-		return
-	}
-	tx, err := sqlite.Begin()
-	checkErr(err)
-	stmt, err := tx.Prepare("UPDATE `userinfo` SET `" + field + "` =  datetime('now') WHERE `username`=?")
-	checkErr(err)
-	_, err = stmt.Exec(username)
-	checkErr(err)
-	tx.Commit()
-	stmt.Close()
-}
-
-func initUser(username string) User {
-	username = strings.TrimSpace(username)
-	tx, err := sqlite.Begin()
-	checkErr(err)
-	stmt, err := tx.Prepare("INSERT INTO `userinfo` (username, last_join, last_active, first_seen) VALUES (?, datetime('now'), datetime('now'), datetime('now'))")
-	checkErr(err)
-	_, err = stmt.Exec(username)
-	checkErr(err)
-	tx.Commit()
-	stmt.Close()
-	return getUserData(username)
-}
-
-func getUserData(username string) User {
-	username = strings.TrimSpace(username)
-	stmt, err := sqlite.Prepare("SELECT uid, last_join, last_part, last_active, first_seen FROM `userinfo` WHERE `username`=?")
-	checkErr(err)
-	u := User{
-		name: username,
-	}
-	row := stmt.QueryRow(username)
-	row.Scan(&u.id, &u.lastJoin, &u.lastPart, &u.lastActive, &u.firstSeen)
-	stmt.Close()
-	return u
-}
-
-func initDB() {
-	sqlStmt, err := ioutil.ReadFile("table_userinfo.sql") // just pass the file name
-	if err != nil {
-		fmt.Print(err)
-	}
-	openDB()
-	_, err = sqlite.Exec(string(sqlStmt))
-	checkErr(err)
-	closeDB()
-}
-
-func openDB() {
-	sqlite, sqliteError = sql.Open("sqlite3", "./" + sqliteFileName)
-	checkErr(sqliteError)
-}
-
-func closeDB() {
-	if sqlite != nil {
-		sqlite.Close()
-	}
-}
-
 func checkErr(err error) {
 	if err != nil {
-		closeDB()
 		panic(err)
 	}
 }

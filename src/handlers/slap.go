@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"math/rand"
+	"github.com/3stadt/GoTBot/src/globals"
 )
 
 func Slap(channel string, sender string, params string, connection *irc.Connection) {
@@ -13,7 +14,7 @@ func Slap(channel string, sender string, params string, connection *irc.Connecti
 		return
 	}
 
-	if victim == "himself" || victim == "herself" || victim == "itself" {
+	if victim == "himself" || victim == "herself" || victim == "itself" || victim == globals.Conf["TWITCH_USER"] {
 		connection.Privmsg(channel, "/me slaps "+sender+" playfully around with the mighty banhammer...")
 		return
 	}

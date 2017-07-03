@@ -5,82 +5,90 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strings"
-	"github.com/3stadt/GoTBot/src/handlers"
 	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/3stadt/GoTBot/src/bolt"
 	"time"
 	"github.com/joho/godotenv"
 	"log"
+	"github.com/3stadt/GoTBot/src/queue"
+	"github.com/3stadt/GoTBot/src/handlers"
+	"github.com/3stadt/GoTBot/src/globals"
+	"strconv"
 )
 
-var conf map[string]string
 const serverSSL = "irc.chat.twitch.tv:443"
-
-var commandMap = map[string]func(channel string, sender string, params string, connection *irc.Connection){
-	"goSay":   handlers.Echo,
-	"slap":    handlers.Slap,
-}
 
 func main() {
 	var err error
-	conf, err = godotenv.Read()
+	globals.Conf, err = godotenv.Read()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	channel := "#" + conf["TWITCH_CHANNEL"]
-	botnick := conf["TWITCH_USER"]
-	oauth := conf["OAUTH"]
+	queue.NewQueue(globals.CommandQueueName, 30)
+	channel := "#" + globals.Conf["TWITCH_CHANNEL"]
+	botnick := globals.Conf["TWITCH_USER"]
+	oauth := globals.Conf["OAUTH"]
+	debug, debugErr := strconv.ParseBool(globals.Conf["DEBUG"])
+	if debugErr != nil {
+		debug = false
+	}
 	checkErr(err)
 	oauthString := strings.TrimSpace(string(oauth))
-	connection := irc.IRC(botnick, botnick)
-	connection.VerboseCallbackHandler = true
-	connection.Debug = true
-	connection.UseTLS = true
-	connection.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	connection.Password = oauthString
+	globals.Connection = irc.IRC(botnick, botnick)
+	globals.Connection.VerboseCallbackHandler = debug
+	globals.Connection.Debug = debug
+	globals.Connection.UseTLS = true
+	globals.Connection.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	globals.Connection.Password = oauthString
 
-	connection.AddCallback("001", func(e *irc.Event) {
-		connection.SendRaw("CAP REQ :twitch.tv/membership")
-		connection.Join(channel)
+	globals.Connection.AddCallback("001", func(e *irc.Event) {
+		globals.Connection.SendRaw("CAP REQ :twitch.tv/membership")
+		globals.Connection.Join(channel)
 	})
-	connection.AddCallback("366", func(e *irc.Event) {})
-	connection.AddCallback("PART", func(e *irc.Event) {
+	globals.Connection.AddCallback("366", func(e *irc.Event) {})
+	globals.Connection.AddCallback("PART", func(e *irc.Event) {
 		if e.Nick == botnick {
 			return
 		}
-		bolt.CreateOrUpdateUser(structs.User{
-			Name: e.Nick,
+		err := bolt.CreateOrUpdateUser(structs.User{
+			Name:     e.Nick,
 			LastPart: time.Now(),
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	connection.AddCallback("JOIN", func(e *irc.Event) {
+	globals.Connection.AddCallback("JOIN", func(e *irc.Event) {
 		if e.Nick == botnick {
 			return
 		}
-		bolt.CreateOrUpdateUser(structs.User{
-			Name: e.Nick,
+		err := bolt.CreateOrUpdateUser(structs.User{
+			Name:     e.Nick,
 			LastJoin: time.Now(),
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 
-	connection.AddCallback("PRIVMSG", func(e *irc.Event) {
+	globals.Connection.AddCallback("PRIVMSG", func(e *irc.Event) {
 		if e.Nick == botnick {
 			return
 		}
-		bolt.CreateOrUpdateUser(structs.User{
-			Name: e.Nick,
+		err := bolt.CreateOrUpdateUser(structs.User{
+			Name:       e.Nick,
 			LastActive: time.Now(),
 		})
+		if err != nil {
+			panic(err)
+		}
 		message := e.Message()
 		if len(message) > 1 && strings.HasPrefix(message, "!") {
 			i := strings.Index(message, " ")
-
 			channel := e.Arguments[0]
 			sender := e.Nick
 			var command string
 			var params string
-
 			if i < 0 {
 				command = message[1:]
 				params = ""
@@ -88,20 +96,26 @@ func main() {
 				command = message[1:i]
 				params = message[i:]
 			}
-
-			if _, ok := commandMap[command]; ok {
-				commandMap[command](channel, sender, params, connection)
+			if _, ok := handlers.CommandMap[command]; ok {
+				queue.AddJob(globals.CommandQueueName, structs.Job{
+					Command: command,
+					Channel: channel,
+					Sender:  sender,
+					Message: message,
+					Params: params,
+				})
 			}
-
 		}
 	})
 
-	err = connection.Connect(serverSSL)
+	go queue.HandleCommand(queue.JobChannels[globals.CommandQueueName])
+
+	err = globals.Connection.Connect(serverSSL)
 	if err != nil {
 		fmt.Printf("Err %s", err)
 		return
 	}
-	connection.Loop()
+	globals.Connection.Loop()
 }
 
 func checkErr(err error) {

@@ -3,10 +3,9 @@ package structs
 import "time"
 
 type User struct {
-	Id         int
-	Name       string
-	LastJoin   time.Time
-	LastPart   time.Time
-	LastActive time.Time
-	FirstSeen  time.Time
+	Name       string `json:"name"`
+	LastJoin   time.Time `json:"last_join"`
+	LastPart   time.Time `json:"last_part"`
+	LastActive time.Time`json:"last_active"`
+	FirstSeen  time.Time`json:"first_seen"`
 }

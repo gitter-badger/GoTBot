@@ -47,11 +47,12 @@ func main() {
 	})
 	globals.Connection.AddCallback("366", func(e *irc.Event) {})
 	globals.Connection.AddCallback("PART", func(e *irc.Event) {
-		if e.Nick == botnick {
+		nick := strings.ToLower(e.Nick)
+		if nick == strings.ToLower(botnick) {
 			return
 		}
 		err := bolt.CreateOrUpdateUser(structs.User{
-			Name:     e.Nick,
+			Name:     nick,
 			LastPart: time.Now(),
 		})
 		if err != nil {
@@ -59,11 +60,12 @@ func main() {
 		}
 	})
 	globals.Connection.AddCallback("JOIN", func(e *irc.Event) {
-		if e.Nick == botnick {
+		nick := strings.ToLower(e.Nick)
+		if nick == strings.ToLower(botnick) {
 			return
 		}
 		err := bolt.CreateOrUpdateUser(structs.User{
-			Name:     e.Nick,
+			Name:     nick,
 			LastJoin: time.Now(),
 		})
 		if err != nil {
@@ -72,11 +74,12 @@ func main() {
 	})
 
 	globals.Connection.AddCallback("PRIVMSG", func(e *irc.Event) {
-		if e.Nick == botnick {
+		nick := strings.ToLower(e.Nick)
+		if nick == strings.ToLower(botnick) {
 			return
 		}
 		err := bolt.CreateOrUpdateUser(structs.User{
-			Name:       e.Nick,
+			Name:       nick,
 			LastActive: time.Now(),
 		})
 		if err != nil {
@@ -86,7 +89,7 @@ func main() {
 		if len(message) > 1 && strings.HasPrefix(message, "!") {
 			i := strings.Index(message, " ")
 			channel := e.Arguments[0]
-			sender := e.Nick
+			sender := nick
 			var command string
 			var params string
 			if i < 0 {

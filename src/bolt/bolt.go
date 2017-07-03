@@ -14,7 +14,7 @@ var db *bolt.DB
 func CreateOrUpdateUser(updateUser structs.User) error {
 	baseUser := GetUser(updateUser.Name)
 	if baseUser != nil {
-		if err := mergo.MergeWithOverwrite(&baseUser, updateUser); err != nil {
+		if err := mergo.MergeWithOverwrite(baseUser, &updateUser); err != nil {
 			panic(err)
 		}
 	} else {
@@ -22,12 +22,8 @@ func CreateOrUpdateUser(updateUser structs.User) error {
 	}
 	open()
 	dberr := db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte(globals.UserbucketName))
-		if err != nil {
-			fmt.Println(globals.UserbucketName, baseUser)
-			panic(err)
-		}
-		err = b.Put([]byte(baseUser.Name), marshalUser(*baseUser))
+		b := tx.Bucket([]byte(globals.UserbucketName))
+		err := b.Put([]byte(baseUser.Name), marshalUser(*baseUser))
 		return err
 	})
 	db.Close()
@@ -64,17 +60,32 @@ func marshalUser(user structs.User) []byte {
 }
 
 func unmarshalUser(bytes []byte) (error, *structs.User) {
-	var user structs.User
-	fmt.Println(bytes, user)
-	if err:= json.Unmarshal(bytes, &user); err != nil {
+	var objmap map[string]*json.RawMessage
+	var user *structs.User
+	if len(bytes) == 0 {
+		return nil, nil
+	}
+	if err:= json.Unmarshal(bytes, &objmap); err != nil {
 		return err, nil
 	}
-	return nil, &user
+	json.Unmarshal(*objmap["Name"], &user)
+	json.Unmarshal(*objmap["LastJoin"], &user)
+	json.Unmarshal(*objmap["LastPart"], &user)
+	json.Unmarshal(*objmap["LastActive"], &user)
+	json.Unmarshal(*objmap["FirstSeen"], &user)
+	return nil, user
 }
 
 func open() {
 	var err error
 	db, err = bolt.Open("gotbot.db", 0600, nil)
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(globals.UserbucketName))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+		return nil
+	})
 	if err != nil {
 		panic(err)
 	}

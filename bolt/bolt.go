@@ -2,10 +2,10 @@ package bolt
 
 import (
 	"github.com/boltdb/bolt"
-	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/structs"
 	"encoding/json"
 	"github.com/imdario/mergo"
-	"github.com/3stadt/GoTBot/src/globals"
+	"github.com/3stadt/GoTBot/globals"
 	"fmt"
 )
 
@@ -33,18 +33,22 @@ func CreateOrUpdateUser(updateUser structs.User) error {
 func GetUser(username string) *structs.User {
 	open()
 	var user *structs.User
+	var v []byte
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(globals.UserbucketName))
 		if b == nil {
 			return nil
 		}
-		v := b.Get([]byte(username))
+		v = b.Get([]byte(username))
+		if len(v) == 0 {
+			return nil
+		}
 		var err error
-		err, user = unmarshalUser(v)
+		user, err = unmarshalUser(v)
 		return err
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(string(v))
 		panic(err)
 	}
 	db.Close()
@@ -59,21 +63,27 @@ func marshalUser(user structs.User) []byte {
 	return jUser
 }
 
-func unmarshalUser(bytes []byte) (error, *structs.User) {
-	var objmap map[string]*json.RawMessage
-	var user *structs.User
+func unmarshalUser(bytes []byte) (*structs.User, error) {
+	user := &structs.User{}
+	if err := json.Unmarshal(bytes, user); err != nil {
+		return nil, err
+	}
+	return user, nil
+	/*var objMap map[string]*json.RawMessage
+	var user structs.User
 	if len(bytes) == 0 {
 		return nil, nil
 	}
-	if err:= json.Unmarshal(bytes, &objmap); err != nil {
+	if err:= json.Unmarshal(bytes, &objMap); err != nil {
 		return err, nil
 	}
-	json.Unmarshal(*objmap["Name"], &user)
-	json.Unmarshal(*objmap["LastJoin"], &user)
-	json.Unmarshal(*objmap["LastPart"], &user)
-	json.Unmarshal(*objmap["LastActive"], &user)
-	json.Unmarshal(*objmap["FirstSeen"], &user)
-	return nil, user
+
+	json.Unmarshal(*objMap["Name"], user)
+	json.Unmarshal(*objMap["LastJoin"], user)
+	json.Unmarshal(*objMap["LastPart"], user)
+	json.Unmarshal(*objMap["LastActive"], user)
+	json.Unmarshal(*objMap["FirstSeen"], user)
+	return nil, &user*/
 }
 
 func open() {

@@ -2,17 +2,16 @@ package main
 
 import (
 	"github.com/thoj/go-ircevent"
-	"crypto/tls"
 	"fmt"
 	"strings"
-	"github.com/3stadt/GoTBot/src/structs"
-	"github.com/3stadt/GoTBot/src/bolt"
+	"github.com/3stadt/GoTBot/structs"
+	"github.com/3stadt/GoTBot/bolt"
 	"time"
 	"github.com/joho/godotenv"
 	"log"
-	"github.com/3stadt/GoTBot/src/queue"
-	"github.com/3stadt/GoTBot/src/handlers"
-	"github.com/3stadt/GoTBot/src/globals"
+	"github.com/3stadt/GoTBot/queue"
+	"github.com/3stadt/GoTBot/handlers"
+	"github.com/3stadt/GoTBot/globals"
 	"strconv"
 )
 
@@ -34,55 +33,55 @@ func main() {
 	}
 	checkErr(err)
 	oauthString := strings.TrimSpace(string(oauth))
-	globals.Connection = irc.IRC(botnick, botnick)
-	globals.Connection.VerboseCallbackHandler = debug
-	globals.Connection.Debug = debug
-	globals.Connection.UseTLS = true
-	globals.Connection.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	globals.Connection.Password = oauthString
+	ircConnection := irc.IRC(botnick, botnick)
+	ircConnection.VerboseCallbackHandler = debug
+	ircConnection.Debug = debug
+	ircConnection.UseTLS = true
+	ircConnection.Password = oauthString
 
-	globals.Connection.AddCallback("001", func(e *irc.Event) {
-		globals.Connection.SendRaw("CAP REQ :twitch.tv/membership")
-		globals.Connection.Join(channel)
+	ircConnection.AddCallback("001", func(e *irc.Event) {
+		ircConnection.SendRaw("CAP REQ :twitch.tv/membership")
+		ircConnection.Join(channel)
 	})
-	globals.Connection.AddCallback("366", func(e *irc.Event) {})
-	globals.Connection.AddCallback("PART", func(e *irc.Event) {
+
+	ircConnection.AddCallback("366", func(e *irc.Event) {})
+
+	ircConnection.AddCallback("PART", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
 		if nick == strings.ToLower(botnick) {
 			return
 		}
+		now := time.Now()
 		err := bolt.CreateOrUpdateUser(structs.User{
 			Name:     nick,
-			LastPart: time.Now(),
+			LastPart: &now,
 		})
 		if err != nil {
 			panic(err)
 		}
 	})
-	globals.Connection.AddCallback("JOIN", func(e *irc.Event) {
+	ircConnection.AddCallback("JOIN", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
 		if nick == strings.ToLower(botnick) {
 			return
 		}
+		now := time.Now()
 		err := bolt.CreateOrUpdateUser(structs.User{
 			Name:     nick,
-			LastJoin: time.Now(),
+			LastJoin: &now,
 		})
 		if err != nil {
 			panic(err)
 		}
 	})
 
-	globals.Connection.AddCallback("PRIVMSG", func(e *irc.Event) {
+	ircConnection.AddCallback("PRIVMSG", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
-		if nick == strings.ToLower(botnick) {
-			return
-		}
-		err := bolt.CreateOrUpdateUser(structs.User{
+		now := time.Now()
+		if err := bolt.CreateOrUpdateUser(structs.User{
 			Name:       nick,
-			LastActive: time.Now(),
-		})
-		if err != nil {
+			LastActive: &now,
+		}); err != nil {
 			panic(err)
 		}
 		message := e.Message()
@@ -92,6 +91,7 @@ func main() {
 			sender := nick
 			var command string
 			var params string
+
 			if i < 0 {
 				command = message[1:]
 				params = ""
@@ -111,14 +111,13 @@ func main() {
 		}
 	})
 
-	go queue.HandleCommand(queue.JobChannels[globals.CommandQueueName])
+	go queue.HandleCommand(queue.JobQueue[globals.CommandQueueName], ircConnection)
 
-	err = globals.Connection.Connect(serverSSL)
-	if err != nil {
+	if err = ircConnection.Connect(serverSSL); err != nil {
 		fmt.Printf("Err %s", err)
 		return
 	}
-	globals.Connection.Loop()
+	ircConnection.Loop()
 }
 
 func checkErr(err error) {

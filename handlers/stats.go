@@ -4,7 +4,7 @@ import (
 	"strings"
 	"github.com/3stadt/GoTBot/bolt"
 	"github.com/3stadt/GoTBot/structs"
-	"errors"
+	"github.com/3stadt/GoTBot/errors"
 )
 
 func Stats(channel string, sender string, params string) (*structs.Message, error) {
@@ -14,7 +14,7 @@ func Stats(channel string, sender string, params string) (*structs.Message, erro
 	}
 	targetUser := bolt.GetUser(target)
 	if targetUser == nil {
-		return nil, errors.New("No target user given.")
+		return nil, &fail.NoTargetUser{Name: target}
 	}
 	return &structs.Message{
 		Channel: channel,

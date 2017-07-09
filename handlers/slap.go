@@ -6,13 +6,13 @@ import (
 	"math/rand"
 	"github.com/3stadt/GoTBot/globals"
 	"github.com/3stadt/GoTBot/structs"
-	"errors"
+	"github.com/3stadt/GoTBot/errors"
 )
 
 func Slap(channel string, sender string, params string) (*structs.Message, error) {
 	victim := strings.TrimSpace(params)
 	if len(params) < 1 || strings.ContainsAny(victim, " ") {
-		return nil, errors.New("Parameter error: Too many parameters, max 1.")
+		return nil, &fail.TooManyArgs{Max: 1}
 	}
 
 	if victim == "himself" || victim == "herself" || victim == "itself" || victim == globals.Conf["TWITCH_USER"] {

@@ -11,7 +11,7 @@ import (
 	"log"
 	"github.com/3stadt/GoTBot/queue"
 	"github.com/3stadt/GoTBot/handlers"
-	"github.com/3stadt/GoTBot/globals"
+	"github.com/3stadt/GoTBot/context"
 	"strconv"
 )
 
@@ -19,15 +19,15 @@ const serverSSL = "irc.chat.twitch.tv:443"
 
 func main() {
 	var err error
-	globals.Conf, err = godotenv.Read()
+	context.Conf, err = godotenv.Read()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	queue.NewQueue(globals.CommandQueueName, 30)
-	channel := "#" + globals.Conf["TWITCH_CHANNEL"]
-	botnick := globals.Conf["TWITCH_USER"]
-	oauth := globals.Conf["OAUTH"]
-	debug, debugErr := strconv.ParseBool(globals.Conf["DEBUG"])
+	queue.NewQueue(context.CommandQueueName, 30)
+	channel := "#" + context.Conf["TWITCH_CHANNEL"]
+	botnick := context.Conf["TWITCH_USER"]
+	oauth := context.Conf["OAUTH"]
+	debug, debugErr := strconv.ParseBool(context.Conf["DEBUG"])
 	if debugErr != nil {
 		debug = false
 	}
@@ -100,7 +100,7 @@ func main() {
 				params = message[i:]
 			}
 			if _, ok := handlers.CommandMap[command]; ok {
-				queue.AddJob(globals.CommandQueueName, structs.Job{
+				queue.AddJob(context.CommandQueueName, structs.Job{
 					Command: command,
 					Channel: channel,
 					Sender:  sender,
@@ -111,7 +111,7 @@ func main() {
 		}
 	})
 
-	go queue.HandleCommand(queue.JobQueue[globals.CommandQueueName], ircConnection)
+	go queue.HandleCommand(queue.JobQueue[context.CommandQueueName], ircConnection)
 
 	if err = ircConnection.Connect(serverSSL); err != nil {
 		fmt.Printf("Err %s", err)

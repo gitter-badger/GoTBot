@@ -5,7 +5,7 @@ import (
 	"github.com/3stadt/GoTBot/structs"
 	"encoding/json"
 	"github.com/imdario/mergo"
-	"github.com/3stadt/GoTBot/globals"
+	"github.com/3stadt/GoTBot/context"
 	"fmt"
 )
 
@@ -22,7 +22,7 @@ func CreateOrUpdateUser(updateUser structs.User) error {
 	}
 	open()
 	dberr := db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(globals.UserbucketName))
+		b := tx.Bucket([]byte(context.UserBucketName))
 		err := b.Put([]byte(baseUser.Name), marshalUser(*baseUser))
 		return err
 	})
@@ -35,7 +35,7 @@ func GetUser(username string) *structs.User {
 	var user *structs.User
 	var v []byte
 	err := db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(globals.UserbucketName))
+		b := tx.Bucket([]byte(context.UserBucketName))
 		if b == nil {
 			return nil
 		}
@@ -90,7 +90,7 @@ func open() {
 	var err error
 	db, err = bolt.Open("gotbot.db", 0600, nil)
 	db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(globals.UserbucketName))
+		_, err := tx.CreateBucketIfNotExists([]byte(context.UserBucketName))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}

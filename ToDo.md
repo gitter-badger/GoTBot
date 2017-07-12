@@ -1,0 +1,6 @@
+- let plugins / internal handlers call message function whenever they want
+- check the error handling / cleanup stuff
+- expose user create, read, update to plugins
+- expose "namespaced" data crud to plugins
+- include underscore js in otto
+- create example JS plugin which uses all available functionality

@@ -13,12 +13,16 @@ import (
 	"github.com/3stadt/GoTBot/handlers"
 	"github.com/3stadt/GoTBot/context"
 	"strconv"
+	"io/ioutil"
+	"os"
+	"github.com/BurntSushi/toml"
 )
 
 const serverSSL = "irc.chat.twitch.tv:443"
 
 func main() {
 	var err error
+	_ = initPlugins()
 	context.Conf, err = godotenv.Read()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -107,6 +111,14 @@ func main() {
 					Message: message,
 					Params: params,
 				})
+			} else if _, ok := handlers.PluginCommandMap[command]; ok {
+				queue.AddJob(context.CommandQueueName, structs.Job{
+					Command: command,
+					Channel: channel,
+					Sender:  sender,
+					Message: message,
+					Params: params,
+				})
 			}
 		}
 	})
@@ -118,6 +130,36 @@ func main() {
 		return
 	}
 	ircConnection.Loop()
+}
+func initPlugins() (error) {
+	files, err := ioutil.ReadDir("./custom/plugins")
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			if _, err := os.Stat("./custom/plugins/" + file.Name() + "/config.toml"); !os.IsNotExist(err) {
+				tomlData, err := ioutil.ReadFile("./custom/plugins/" + file.Name() + "/config.toml")
+				if err != nil {
+					log.Fatal(err)
+					continue
+				}
+				var commands structs.Commands
+				if _, err := toml.Decode(string(tomlData), &commands); err != nil {
+					log.Fatal(err)
+				}
+				for _, c := range commands.Command {
+					if _, ok := handlers.PluginCommandMap[c.Name]; ok {
+						handlers.PluginCommandMap[c.Name] = append(handlers.PluginCommandMap[c.Name], "./custom/plugins/" + file.Name() + "/" + c.EntryScript)
+					} else{
+						handlers.PluginCommandMap[c.Name] = []string{"./custom/plugins/" + file.Name() + "/" + c.EntryScript}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func checkErr(err error) {

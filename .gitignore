@@ -1,3 +1,5 @@
 /.idea
 /.env
 gotbot.db*
+custom/plugins/*
+!custom/plugins/.gitkeep

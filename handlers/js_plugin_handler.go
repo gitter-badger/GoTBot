@@ -5,6 +5,7 @@ import (
 	"os"
 	"io/ioutil"
 	"github.com/robertkrimen/otto"
+	_ "github.com/robertkrimen/otto/underscore"
 	"github.com/thoj/go-ircevent"
 )
 

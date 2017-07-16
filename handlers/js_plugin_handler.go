@@ -32,7 +32,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		return otto.Value{}
 	})
 	vm.Set("getUser", func(username string) string {
-		return &getBoltUserAsJson(username)
+		return *getBoltUserAsJson(username)
 	})
 	_, _ = vm.Run(string(jsData))
 	return nil, nil
@@ -42,8 +42,9 @@ func getBoltUserAsJson(name string) *string {
 	userStruct := bolt.GetUser(name)
 	jUser, err := json.Marshal(*userStruct)
 	if err != nil {
-		return &"{}"
+		emptyJson := "{}"
+		return &emptyJson
 	}
 	userdata := string(jUser)
-	return userdata
+	return &userdata
 }

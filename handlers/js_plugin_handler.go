@@ -9,6 +9,8 @@ import (
 	"github.com/thoj/go-ircevent"
 	"github.com/3stadt/GoTBot/bolt"
 	"encoding/json"
+	"fmt"
+"github.com/mitchellh/mapstructure"
 )
 
 func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) (*structs.Message, error) {
@@ -31,15 +33,38 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		}
 		return otto.Value{}
 	})
+
 	vm.Set("getUser", func(username string) string {
 		return *getBoltUserAsJson(username)
+	})
+
+	vm.Set("updateUser", func(userdata interface{}) bool {
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+		userdataMap := userdata.(map[string]interface{})
+		updateBoltUserFromJson(userdataMap)
+		return true
 	})
 	_, _ = vm.Run(string(jsData))
 	return nil, nil
 }
 
-func getBoltUserAsJson(name string) *string {
-	userStruct := bolt.GetUser(name)
+func updateBoltUserFromJson(userdata map[string]interface{}) error {
+	user := structs.User{}
+	err := mapstructure.Decode(userdata, &user)
+	if err != nil {
+		fmt.Println(userdata)
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(user)
+	return nil
+}
+
+func getBoltUserAsJson(username string) *string {
+	userStruct := bolt.GetUser(username)
 	jUser, err := json.Marshal(*userStruct)
 	if err != nil {
 		emptyJson := "{}"

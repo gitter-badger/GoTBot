@@ -7,6 +7,8 @@ import (
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
 	"github.com/thoj/go-ircevent"
+	"github.com/3stadt/GoTBot/bolt"
+	"encoding/json"
 )
 
 func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) (*structs.Message, error) {
@@ -29,6 +31,19 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		}
 		return otto.Value{}
 	})
+	vm.Set("getUser", func(username string) string {
+		return &getBoltUserAsJson(username)
+	})
 	_, _ = vm.Run(string(jsData))
 	return nil, nil
+}
+
+func getBoltUserAsJson(name string) *string {
+	userStruct := bolt.GetUser(name)
+	jUser, err := json.Marshal(*userStruct)
+	if err != nil {
+		return &"{}"
+	}
+	userdata := string(jUser)
+	return userdata
 }

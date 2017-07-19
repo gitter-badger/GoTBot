@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"strings"
-	"github.com/3stadt/GoTBot/bolt"
 	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/errors"
+	"github.com/3stadt/GoTBot/db"
+	"strconv"
 )
 
 func Stats(channel string, sender string, params string) (*structs.Message, error) {
@@ -12,12 +12,12 @@ func Stats(channel string, sender string, params string) (*structs.Message, erro
 	if len(params) < 1 || strings.ContainsAny(target, " ") {
 		target = sender
 	}
-	targetUser := bolt.GetUser(target)
-	if targetUser == nil {
-		return nil, &fail.NoTargetUser{Name: target}
+	targetUser, err := db.GetUser(target)
+	if err != nil {
+		return nil, err
 	}
 	return &structs.Message{
 		Channel: channel,
-		Message: "User " + targetUser.Name + " was last active on " + targetUser.LastActive.Format("Mon, Jan 2 15:04:05"),
+		Message: "User " + targetUser.Name + " with " + strconv.Itoa(targetUser.MessageCount) + " messages sent was last active on " + targetUser.LastActive.Format("Mon, Jan 2 15:04:05"),
 	}, nil
 }

@@ -7,10 +7,9 @@ import (
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
 	"github.com/thoj/go-ircevent"
-	"github.com/3stadt/GoTBot/bolt"
 	"encoding/json"
 	"fmt"
-"github.com/mitchellh/mapstructure"
+	"github.com/3stadt/GoTBot/db"
 )
 
 func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) (*structs.Message, error) {
@@ -34,40 +33,57 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		return otto.Value{}
 	})
 
-	vm.Set("getUser", func(username string) string {
-		return *getBoltUserAsJson(username)
+	vm.Set("getUser", func(call otto.FunctionCall) otto.Value {
+		result, _ := vm.ToValue("")
+		if len(call.ArgumentList) < 1 {
+			return result
+		}
+		username, err := call.Argument(0).ToString()
+		if err != nil{
+			return result
+		}
+		result, _ = vm.ToValue(*getBoltUserAsJson(username))
+		return result
 	})
 
-	vm.Set("updateUser", func(userdata interface{}) bool {
-		if err != nil {
-			fmt.Println(err)
-			return false
+	vm.Set("updateUser", func(call otto.FunctionCall) otto.Value {
+		result, _ := vm.ToValue(false)
+		if len(call.ArgumentList) < 1 {
+			return result
 		}
-		userdataMap := userdata.(map[string]interface{})
-		updateBoltUserFromJson(userdataMap)
-		return true
+		jsonString, err := call.Argument(0).ToString()
+		if err != nil{
+			fmt.Println(jsonString)
+			return result
+		}
+		if err := updateBoltUserFromJson(jsonString); err != nil {
+			fmt.Println(err)
+			return otto.FalseValue()
+		}
+		return otto.TrueValue()
 	})
 	_, _ = vm.Run(string(jsData))
 	return nil, nil
 }
 
-func updateBoltUserFromJson(userdata map[string]interface{}) error {
+func updateBoltUserFromJson(userdata string) error {
 	user := structs.User{}
-	err := mapstructure.Decode(userdata, &user)
-	if err != nil {
+	if err := json.Unmarshal([]byte(userdata), &user); err != nil {
 		fmt.Println(userdata)
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(user)
-	return nil
+	return db.UpdateUser(user)
 }
 
 func getBoltUserAsJson(username string) *string {
-	userStruct := bolt.GetUser(username)
+	emptyJson := "{}"
+	userStruct, err := db.GetUser(username)
+	if err != nil {
+		return &emptyJson
+	}
 	jUser, err := json.Marshal(*userStruct)
 	if err != nil {
-		emptyJson := "{}"
 		return &emptyJson
 	}
 	userdata := string(jUser)

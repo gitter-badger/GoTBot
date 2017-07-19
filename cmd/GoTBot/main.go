@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/bolt"
 	"time"
 	"github.com/joho/godotenv"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"io/ioutil"
 	"os"
 	"github.com/BurntSushi/toml"
+	"github.com/3stadt/GoTBot/db"
 )
 
 const serverSSL = "irc.chat.twitch.tv:443"
@@ -23,6 +23,10 @@ const serverSSL = "irc.chat.twitch.tv:443"
 func main() {
 	var err error
 	_ = initPlugins()
+
+	db.Up()
+	defer db.Down()
+
 	context.Conf, err = godotenv.Read()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -56,7 +60,7 @@ func main() {
 			return
 		}
 		now := time.Now()
-		err := bolt.CreateOrUpdateUser(structs.User{
+		err := db.CreateOrUpdateUser(structs.User{
 			Name:     nick,
 			LastPart: &now,
 		})
@@ -70,7 +74,7 @@ func main() {
 			return
 		}
 		now := time.Now()
-		err := bolt.CreateOrUpdateUser(structs.User{
+		err := db.CreateOrUpdateUser(structs.User{
 			Name:     nick,
 			LastJoin: &now,
 		})
@@ -82,7 +86,7 @@ func main() {
 	ircConnection.AddCallback("PRIVMSG", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
 		now := time.Now()
-		if err := bolt.CreateOrUpdateUser(structs.User{
+		if err := db.CreateOrUpdateUser(structs.User{
 			Name:       nick,
 			LastActive: &now,
 		}); err != nil {

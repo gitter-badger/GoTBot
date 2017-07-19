@@ -1,6 +1,6 @@
-- let plugins / internal handlers call message function whenever they want
-- check the error handling / cleanup stuff
+- evaluate https://github.com/mattn/go-sqlite3 bc of concurrency in bolt/storm
+- evaluate https://github.com/HouzuoGuo/tiedot with https://golang.org/pkg/sync/#Mutex and https://gist.github.com/anonymous/ba51bc55b06af3636fd58c465dc6ac33
+  - "9:01 ResetBoys: Yeah and database/sql supports context as a param (in some new function)"
 - expose user create, read, update to plugins
 - expose "namespaced" data crud to plugins
-- include underscore js in otto
 - create example JS plugin which uses all available functionality

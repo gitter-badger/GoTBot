@@ -6,6 +6,7 @@ import (
 	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/imdario/mergo"
 	"github.com/3stadt/GoTBot/src/errors"
+	"time"
 )
 
 func Up() {
@@ -29,6 +30,30 @@ func UpdateUser(user structs.User) error {
 	}
 	mergo.Merge(&baseUser, user)
 	return SetUser(baseUser)
+}
+
+func UpdateMessageCount(nick string) error {
+	user := structs.User{}
+	err := context.Users.Get(context.UserBucketName, nick, &user)
+	if err != nil {
+		return CreateUser(nick)
+	}
+	now := time.Now()
+	user.MessageCount++
+	user.LastActive = &now
+	SetUser(user)
+	return nil
+}
+
+func CreateUser(nick string) error {
+	now := time.Now()
+	newUser := structs.User{}
+	newUser.Name = nick
+	newUser.MessageCount = 1
+	newUser.FirstSeen = &now
+	newUser.LastActive = &now
+	newUser.LastJoin = &now
+	return SetUser(newUser)
 }
 
 func CreateOrUpdateUser(user structs.User) error {

@@ -85,11 +85,7 @@ func main() {
 
 	ircConnection.AddCallback("PRIVMSG", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
-		now := time.Now()
-		if err := db.CreateOrUpdateUser(structs.User{
-			Name:       nick,
-			LastActive: &now,
-		}); err != nil {
+		if err := db.UpdateMessageCount(nick); err != nil {
 			panic(err)
 		}
 		message := e.Message()

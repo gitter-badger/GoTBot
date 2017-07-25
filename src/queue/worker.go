@@ -1,8 +1,8 @@
 package queue
 
 import (
-	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/handlers"
+	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/src/handlers"
 	"github.com/thoj/go-ircevent"
 	"fmt"
 )

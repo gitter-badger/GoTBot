@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"strings"
-	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/db"
+	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/src/db"
 	"strconv"
 )
 

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/3stadt/GoTBot/structs"
+	"github.com/3stadt/GoTBot/src/structs"
 	"os"
 	"io/ioutil"
 	"github.com/robertkrimen/otto"
@@ -9,7 +9,7 @@ import (
 	"github.com/thoj/go-ircevent"
 	"encoding/json"
 	"fmt"
-	"github.com/3stadt/GoTBot/db"
+	"github.com/3stadt/GoTBot/src/db"
 )
 
 func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) (*structs.Message, error) {

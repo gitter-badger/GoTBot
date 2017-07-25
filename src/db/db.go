@@ -2,10 +2,10 @@ package db
 
 import (
 	"github.com/asdine/storm"
-	"github.com/3stadt/GoTBot/context"
-	"github.com/3stadt/GoTBot/structs"
+	"github.com/3stadt/GoTBot/src/context"
+	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/imdario/mergo"
-	"github.com/3stadt/GoTBot/errors"
+	"github.com/3stadt/GoTBot/src/errors"
 )
 
 func Up() {

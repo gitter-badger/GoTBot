@@ -1,8 +1,8 @@
 package queue
 
 import (
-	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/errors"
+	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/src/errors"
 )
 
 var JobQueue = make(map[string](chan structs.Job))

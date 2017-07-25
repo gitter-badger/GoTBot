@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/3stadt/GoTBot/structs"
+	"github.com/3stadt/GoTBot/src/structs"
 )
 
 func Echo(channel string, sender string, params string) (*structs.Message, error) {

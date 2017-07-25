@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 	"math/rand"
-	"github.com/3stadt/GoTBot/context"
-	"github.com/3stadt/GoTBot/structs"
-	"github.com/3stadt/GoTBot/errors"
+	"github.com/3stadt/GoTBot/src/context"
+	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/3stadt/GoTBot/src/errors"
 )
 
 func Slap(channel string, sender string, params string) (*structs.Message, error) {

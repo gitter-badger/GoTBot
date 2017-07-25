@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	queue.NewQueue(context.CommandQueueName, 30)
+	queue.NewQueue(context.CommandQueueName)
 	channel := "#" + context.Conf["TWITCH_CHANNEL"]
 	botNick := context.Conf["TWITCH_USER"]
 	oauth := context.Conf["OAUTH"]

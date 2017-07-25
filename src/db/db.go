@@ -37,7 +37,7 @@ func CreateOrUpdateUser(user structs.User) error {
 	if err != nil {
 		return SetUser(user)
 	}
-	mergo.Merge(&baseUser, user)
+	mergo.MergeWithOverwrite(&baseUser, user)
 	return SetUser(baseUser)
 }
 

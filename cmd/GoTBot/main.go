@@ -33,7 +33,7 @@ func main() {
 	}
 	queue.NewQueue(context.CommandQueueName, 30)
 	channel := "#" + context.Conf["TWITCH_CHANNEL"]
-	botnick := context.Conf["TWITCH_USER"]
+	botNick := context.Conf["TWITCH_USER"]
 	oauth := context.Conf["OAUTH"]
 	debug, debugErr := strconv.ParseBool(context.Conf["DEBUG"])
 	if debugErr != nil {
@@ -41,7 +41,7 @@ func main() {
 	}
 	checkErr(err)
 	oauthString := strings.TrimSpace(string(oauth))
-	ircConnection := irc.IRC(botnick, botnick)
+	ircConnection := irc.IRC(botNick, botNick)
 	ircConnection.VerboseCallbackHandler = debug
 	ircConnection.Debug = debug
 	ircConnection.UseTLS = true
@@ -56,7 +56,7 @@ func main() {
 
 	ircConnection.AddCallback("PART", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
-		if nick == strings.ToLower(botnick) {
+		if nick == strings.ToLower(botNick) {
 			return
 		}
 		now := time.Now()
@@ -70,7 +70,7 @@ func main() {
 	})
 	ircConnection.AddCallback("JOIN", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)
-		if nick == strings.ToLower(botnick) {
+		if nick == strings.ToLower(botNick) {
 			return
 		}
 		now := time.Now()

@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/thoj/go-ircevent"
 )
 
-var CommandMap = map[string]func(channel string, sender string, params string) (*structs.Message, error) {
+var CommandMap = map[string]func(channel string, sender string, params string, connection *irc.Connection) error {
 	"goSay": Echo,
 	"slap":  Slap,
 	"stats": Stats,
+	"shutdown": Stop,
+	"stop": Stop,
 }

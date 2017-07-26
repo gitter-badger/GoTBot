@@ -49,10 +49,20 @@ func main() {
 
 	ircConnection.AddCallback("001", func(e *irc.Event) {
 		ircConnection.SendRaw("CAP REQ :twitch.tv/membership")
+		ircConnection.SendRaw("CAP REQ :twitch.tv/commands")
 		ircConnection.Join(channel)
+		ircConnection.Privmsg(channel, "/mods")
 	})
 
 	ircConnection.AddCallback("366", func(e *irc.Event) {})
+
+	ircConnection.AddCallback("NOTICE", func(e *irc.Event) {
+		message := e.Message()
+		moderatorPrefix := "The moderators of this room are: "
+		if strings.HasPrefix(message, moderatorPrefix) {
+			context.TwitchMods = strings.Split(strings.TrimPrefix(message, moderatorPrefix), ", ")
+		}
+	})
 
 	ircConnection.AddCallback("PART", func(e *irc.Event) {
 		nick := strings.ToLower(e.Nick)

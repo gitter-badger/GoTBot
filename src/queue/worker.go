@@ -11,7 +11,7 @@ func commandWorker(job structs.Job, connection *irc.Connection) {
 	var msg *structs.Message
 	var err error
 	if _, ok := handlers.CommandMap[job.Command]; ok {
-		msg, err = handlers.CommandMap[job.Command](job.Channel, job.Sender, job.Params)
+		err = handlers.CommandMap[job.Command](job.Channel, job.Sender, job.Params, connection)
 		if err != nil {
 			fmt.Println(err)
 		}

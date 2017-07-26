@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/3stadt/GoTBot/src/structs"
 	"os"
 	"io/ioutil"
 	"github.com/robertkrimen/otto"
@@ -15,15 +14,15 @@ import (
 	"path/filepath"
 )
 
-func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) (*structs.Message, error) {
+func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) error {
 	var err error
 	var jsData []byte
 	var bucketName = filepath.Base(filePath)
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
-		return nil, err
+		return err
 	}
 	if jsData, err = ioutil.ReadFile(filePath); err != nil {
-		return nil, err
+		return err
 	}
 	vm := otto.New()
 	vm.Set("channel", channel)
@@ -90,7 +89,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		fmt.Println("ERROR in javascript file " + filePath + ":")
 		fmt.Println(err)
 	}
-	return nil, nil
+	return nil
 }
 
 func getBoltUserAsJson(username string) *string {

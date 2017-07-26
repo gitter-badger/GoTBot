@@ -5,21 +5,19 @@ import (
 	"time"
 	"math/rand"
 	"github.com/3stadt/GoTBot/src/context"
-	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/3stadt/GoTBot/src/errors"
+	"github.com/thoj/go-ircevent"
 )
 
-func Slap(channel string, sender string, params string) (*structs.Message, error) {
+func Slap(channel string, sender string, params string, connection *irc.Connection) error {
 	victim := strings.TrimSpace(params)
 	if len(params) < 1 || strings.ContainsAny(victim, " ") {
-		return nil, &fail.TooManyArgs{Max: 1}
+		return &fail.TooManyArgs{Max: 1}
 	}
 
 	if victim == "himself" || victim == "herself" || victim == "itself" || victim == context.Conf["TWITCH_USER"] {
-		return &structs.Message{
-			Channel: channel,
-			Message: "/me slaps " + sender + " playfully around with the mighty banhammer...",
-		}, nil
+		connection.Privmsg(channel, "/me slaps " + sender + " playfully around with the mighty banhammer...")
+		return nil
 
 	}
 
@@ -33,8 +31,6 @@ func Slap(channel string, sender string, params string) (*structs.Message, error
 		"a chainsaw",
 	}
 	n := rand.Int() % len(objects)
-	return &structs.Message{
-		Channel: channel,
-		Message: sender + " slaps " + victim + " around a bit with " + objects[n] + "!",
-	}, nil
+	connection.Privmsg(channel, sender + " slaps " + victim + " around a bit with " + objects[n] + "!")
+	return nil
 }

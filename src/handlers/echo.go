@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"github.com/3stadt/GoTBot/src/structs"
+	"github.com/thoj/go-ircevent"
 )
 
-func Echo(channel string, sender string, params string) (*structs.Message, error) {
-	return &structs.Message{
-		Channel: channel,
-		Message: "Thanks's for sending goSay with '" + params + "' on " + channel + ", " + sender + "!",
-	}, nil
+func Echo(channel string, sender string, params string, connection *irc.Connection) error {
+	connection.Privmsg(channel, "Thanks's for sending goSay with '" + params + "' on " + channel + ", " + sender + "!")
+	return nil
 }

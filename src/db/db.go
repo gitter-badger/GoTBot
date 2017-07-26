@@ -15,11 +15,16 @@ func Up() {
 	if err != nil {
 		panic(err)
 	}
+	context.PluginDB, err = storm.Open(context.PluginDbFile)
+	if err != nil {
+		panic(err)
+	}
 	context.Users = context.DB.From("users")
 }
 
 func Down() {
 	context.DB.Close()
+	context.PluginDB.Close()
 }
 
 func UpdateUser(user structs.User) error {

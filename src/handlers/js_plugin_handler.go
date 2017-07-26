@@ -39,41 +39,19 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 			return result
 		}
 		username, err := call.Argument(0).ToString()
-		if err != nil{
+		if err != nil {
 			return result
 		}
 		result, _ = vm.ToValue(*getBoltUserAsJson(username))
 		return result
 	})
 
-	vm.Set("updateUser", func(call otto.FunctionCall) otto.Value {
-		result, _ := vm.ToValue(false)
-		if len(call.ArgumentList) < 1 {
-			return result
-		}
-		jsonString, err := call.Argument(0).ToString()
-		if err != nil{
-			fmt.Println(jsonString)
-			return result
-		}
-		if err := updateBoltUserFromJson(jsonString); err != nil {
-			fmt.Println(err)
-			return otto.FalseValue()
-		}
-		return otto.TrueValue()
-	})
-	_, _ = vm.Run(string(jsData))
-	return nil, nil
-}
-
-func updateBoltUserFromJson(userdata string) error {
-	user := structs.User{}
-	if err := json.Unmarshal([]byte(userdata), &user); err != nil {
-		fmt.Println(userdata)
+	_, err = vm.Run(string(jsData))
+	if err != nil {
+		fmt.Println("ERROR in javascript file " + filePath + ":")
 		fmt.Println(err)
-		return err
 	}
-	return db.UpdateUser(user)
+	return nil, nil
 }
 
 func getBoltUserAsJson(username string) *string {

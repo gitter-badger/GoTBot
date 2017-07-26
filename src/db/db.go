@@ -7,7 +7,6 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/3stadt/GoTBot/src/errors"
 	"time"
-	"fmt"
 )
 
 func Up() {
@@ -29,7 +28,7 @@ func UpdateUser(user structs.User) error {
 	if err != nil {
 		return &fail.NoTargetUser{Name: user.Name}
 	}
-	mergo.Merge(&baseUser, user)
+	mergo.MergeWithOverwrite(&baseUser, user)
 	return SetUser(baseUser)
 }
 
@@ -63,38 +62,8 @@ func CreateOrUpdateUser(user structs.User) error {
 	if err != nil {
 		return SetUser(user)
 	}
-	mergeUserData(&baseUser, &user)
-	return SetUser(baseUser)
-}
-
-func mergeUserData(baseUser *structs.User, user *structs.User) {
-
-	// Fix time values not being recognized as empty
-	baseUser = clearUser(baseUser)
-	user = clearUser(user)
-
 	mergo.MergeWithOverwrite(&baseUser, user)
-}
-
-func clearUser(user *structs.User) *structs.User {
-	if user.LastActive.IsZero() {
-		user.LastActive = nil
-		fmt.Println("PING")
-	}
-	fmt.Println(user.LastActive)
-	if user.LastJoin.IsZero() {
-		user.LastJoin = nil
-		fmt.Println("PONG")
-	}
-	if user.LastPart.IsZero() {
-		user.LastPart = nil
-		fmt.Println("PANG")
-	}
-	if user.FirstSeen.IsZero() {
-		user.FirstSeen = nil
-		fmt.Println("PÄNG")
-	}
-	return user
+	return SetUser(baseUser)
 }
 
 func GetUser(name string) (*structs.User, error)  {

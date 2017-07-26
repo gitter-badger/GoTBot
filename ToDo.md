@@ -1,2 +1,0 @@
-- expose "namespaced" data crud to plugins
-- create example JS plugin which uses all available functionality

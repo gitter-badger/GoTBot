@@ -8,6 +8,6 @@ var PluginDB *storm.DB
 var Users storm.Node
 
 const CommandQueueName = "commands"
-const UserBucketName = "Users"
+const UserBucketName = "users"
 const DbFile = "gotbot.db"
 const PluginDbFile = "gotbotPlugins.db"

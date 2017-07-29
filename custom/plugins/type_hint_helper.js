@@ -36,14 +36,14 @@ function sendMessage(message) {
  * @returns {string}
  */
 function getUser(name) {
-    return "{" +
-        "Name: ''," +
-        "MessageCount: 0," +
-        "LastJoin: ''," +
-        "LastPart: ''," +
-        "LastActive: ''," +
-        "FirstSeen: ''," +
-        "}";
+    return {
+        Name: '',
+        MessageCount: 0,
+        LastJoin: '',
+        LastPart: '',
+        LastActive: '',
+        FirstSeen: ''
+        };
 }
 
 /**

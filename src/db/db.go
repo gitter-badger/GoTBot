@@ -7,6 +7,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/3stadt/GoTBot/src/errors"
 	"time"
+	"strings"
 )
 
 func Up() {
@@ -41,7 +42,10 @@ func UpdateMessageCount(nick string) error {
 	user := structs.User{}
 	err := context.Users.Get(context.UserBucketName, nick, &user)
 	if err != nil {
-		return CreateUser(nick)
+		return CreateUser(structs.User{
+			Name:         nick,
+			MessageCount: 1,
+		})
 	}
 	now := time.Now()
 	user.MessageCount++
@@ -50,15 +54,22 @@ func UpdateMessageCount(nick string) error {
 	return nil
 }
 
-func CreateUser(nick string) error {
+func CreateUser(user structs.User) error {
+	fillDates(&user)
+	return SetUser(user)
+}
+
+func fillDates(user *structs.User) {
 	now := time.Now()
-	newUser := structs.User{}
-	newUser.Name = nick
-	newUser.MessageCount = 1
-	newUser.FirstSeen = &now
-	newUser.LastActive = &now
-	newUser.LastJoin = &now
-	return SetUser(newUser)
+	if user.FirstSeen == nil {
+		user.FirstSeen = &now
+	}
+	if user.LastActive == nil {
+		user.LastActive = &now
+	}
+	if user.LastJoin == nil {
+		user.LastJoin = &now
+	}
 }
 
 func CreateOrUpdateUser(user structs.User) error {
@@ -71,13 +82,19 @@ func CreateOrUpdateUser(user structs.User) error {
 	return SetUser(baseUser)
 }
 
-func GetUser(name string) (*structs.User, error)  {
+func GetUser(name string) (*structs.User, error) {
 	user := structs.User{}
 	err := context.Users.Get(context.UserBucketName, name, &user)
 	return &user, err
 }
 
-func SetUser(user structs.User) error  {
+func SetUser(user structs.User) error {
+	if strings.TrimSpace(user.Name) == "" {
+		return &fail.InvalidStruct{MissingFields: []string{"Name"}}
+	}
+	if user.MessageCount < 0 {
+		user.MessageCount = 0
+	}
 	err := context.Users.Set(context.UserBucketName, user.Name, user)
 	return err
 }

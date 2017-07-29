@@ -15,7 +15,7 @@ func commandWorker(job structs.Job, connection *irc.Connection) {
 		if err != nil {
 			fmt.Println(err)
 		}
-	} else{
+	} else {
 		if err := executeJsFile(job, connection); err != nil {
 			fmt.Println(err)
 		}

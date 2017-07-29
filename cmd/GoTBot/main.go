@@ -119,7 +119,7 @@ func main() {
 					Channel: channel,
 					Sender:  sender,
 					Message: message,
-					Params: params,
+					Params:  params,
 				})
 			} else if _, ok := handlers.PluginCommandMap[command]; ok {
 				queue.AddJob(context.CommandQueueName, structs.Job{
@@ -127,7 +127,7 @@ func main() {
 					Channel: channel,
 					Sender:  sender,
 					Message: message,
-					Params: params,
+					Params:  params,
 				})
 			}
 		}
@@ -161,8 +161,8 @@ func initPlugins() (error) {
 				}
 				for _, c := range commands.Command {
 					if _, ok := handlers.PluginCommandMap[c.Name]; ok {
-						handlers.PluginCommandMap[c.Name] = append(handlers.PluginCommandMap[c.Name], "./custom/plugins/" + file.Name() + "/" + c.EntryScript)
-					} else{
+						handlers.PluginCommandMap[c.Name] = append(handlers.PluginCommandMap[c.Name], "./custom/plugins/"+file.Name()+"/"+c.EntryScript)
+					} else {
 						handlers.PluginCommandMap[c.Name] = []string{"./custom/plugins/" + file.Name() + "/" + c.EntryScript}
 					}
 				}

@@ -50,7 +50,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 	})
 
 	vm.Set("setData", func(call otto.FunctionCall) otto.Value {
-		result, _ := vm.ToValue("{error: 1}")
+		result, _ := vm.ToValue("{\"error\": 1}")
 		if len(call.ArgumentList) == 2 {
 			key := call.Argument(0)
 			data := call.Argument(1)
@@ -64,7 +64,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		return result
 	})
 	vm.Set("getData", func(call otto.FunctionCall) otto.Value {
-		result, _ := vm.ToValue("{error: 1}")
+		result, _ := vm.ToValue("{\"error\": 1}")
 		if len(call.ArgumentList) == 1 {
 			key := call.Argument(0)
 			var data map[string]interface{}

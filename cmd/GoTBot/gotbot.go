@@ -1,9 +1,6 @@
-package main
+package GoTBot
 
 import (
-	"github.com/thoj/go-ircevent"
-	"fmt"
-	"strings"
 	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/joho/godotenv"
 	"log"
@@ -20,41 +17,31 @@ import (
 
 const serverSSL = "irc.chat.twitch.tv:443"
 
-func main() {
+func Run() {
 	var err error
 	_ = initPlugins()
 	db.Up()
 	defer db.Down()
 	context.Conf, err = godotenv.Read()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	queue.NewQueue(context.CommandQueueName)
+	checkErr(err)
+	_, err = connectToTwitch()
+	checkErr(err)
+}
+func connectToTwitch() (twitch.Client, error) {
 	botNick := context.Conf["TWITCH_USER"]
 	oauth := context.Conf["OAUTH"]
-	tw := twitch.Init(oauth, botNick, context.CommandQueueName)
 	debug, debugErr := strconv.ParseBool(context.Conf["DEBUG"])
 	if debugErr != nil {
 		debug = false
 	}
-	checkErr(err)
-	oauthString := strings.TrimSpace(string(oauth))
-	tw.Connection.VerboseCallbackHandler = debug
-	tw.Connection.Debug = debug
-	tw.Connection.UseTLS = true
-	tw.Connection.Password = oauthString
-	tw.Connection.AddCallback("001", tw.Connected)
-	tw.Connection.AddCallback("366", func(e *irc.Event) {})
-	tw.Connection.AddCallback("NOTICE", tw.Notice)
-	tw.Connection.AddCallback("PART", tw.Part)
-	tw.Connection.AddCallback("JOIN", tw.Join)
-	tw.Connection.AddCallback("PRIVMSG", tw.Privmsg)
-	go queue.HandleCommand(queue.JobQueue[context.CommandQueueName], tw.Connection)
-	if err = tw.Connection.Connect(serverSSL); err != nil {
-		fmt.Printf("Err %s", err)
-		return
+	tw := twitch.Init(oauth, botNick, context.CommandQueueName, debug)
+	if err := tw.Connection.Connect(serverSSL); err != nil {
+		return twitch.Client{}, err
 	}
-	tw.Connection.Loop()
+	queue.NewQueue(context.CommandQueueName)
+	go queue.HandleCommand(queue.JobQueue[context.CommandQueueName], tw.Connection)
+	tw.Connect()
+	return tw, nil
 }
 func initPlugins() (error) {
 	files, err := ioutil.ReadDir("./custom/plugins")

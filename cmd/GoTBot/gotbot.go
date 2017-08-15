@@ -24,8 +24,9 @@ func Run() {
 	defer db.Down()
 	context.Conf, err = godotenv.Read()
 	checkErr(err)
-	_, err = connectToTwitch()
+	tw, err := connectToTwitch()
 	checkErr(err)
+	tw.Connection.Loop()
 }
 func connectToTwitch() (twitch.Client, error) {
 	botNick := context.Conf["TWITCH_USER"]

@@ -10,22 +10,16 @@ import (
 )
 
 func commandWorker(job structs.Job, connection *irc.Connection, p *db.Pool, v *res.Vars) {
-	var msg *structs.Message
 	var err error
-	if _, ok := handlers.CommandMap[job.Command]; ok {
-		err = handlers.CommandMap[job.Command](job.Channel, job.Sender, job.Params, connection, p, v)
+	err = handlers.Call(job, connection, p, v)
+	if err != nil {
+		err = executeJsFile(job, connection, p, v)
 		if err != nil {
 			fmt.Println(err)
 		}
-	} else {
-		if err := executeJsFile(job, connection, p, v); err != nil {
-			fmt.Println(err)
-		}
-	}
-	if msg != nil {
-		connection.Privmsg(msg.Channel, msg.Message)
 	}
 }
+
 func executeJsFile(job structs.Job, connection *irc.Connection, p *db.Pool, v *res.Vars) (error) {
 	fileNames := handlers.PluginCommandMap[job.Command]
 	for _, fileName := range fileNames {

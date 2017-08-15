@@ -28,7 +28,7 @@ func (c *Client) Privmsg(e *irc.Event) {
 			command = message[1:i]
 			params = message[i:]
 		}
-		if _, ok := handlers.CommandMap[command]; ok {
+		if err := handlers.Has(command); err == nil {
 			queue.AddJob(c.CommandQueueName, structs.Job{
 				Command: command,
 				Channel: channel,

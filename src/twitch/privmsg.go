@@ -6,12 +6,11 @@ import (
 	"github.com/3stadt/GoTBot/src/handlers"
 	"github.com/3stadt/GoTBot/src/queue"
 	"github.com/3stadt/GoTBot/src/structs"
-	"github.com/3stadt/GoTBot/src/db"
 )
 
 func (c *Client) Privmsg(e *irc.Event) {
 	nick := strings.ToLower(e.Nick)
-	if err := db.UpdateMessageCount(nick); err != nil {
+	if err := c.Pool.UpdateMessageCount(nick); err != nil {
 		panic(err)
 	}
 	message := e.Message()

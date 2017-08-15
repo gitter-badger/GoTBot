@@ -6,44 +6,53 @@ import (
 	"log"
 	"github.com/3stadt/GoTBot/src/queue"
 	"github.com/3stadt/GoTBot/src/handlers"
-	"github.com/3stadt/GoTBot/src/context"
 	"strconv"
 	"io/ioutil"
 	"os"
 	"github.com/BurntSushi/toml"
 	"github.com/3stadt/GoTBot/src/db"
 	"github.com/3stadt/GoTBot/src/twitch"
+	"github.com/3stadt/GoTBot/src/res"
 )
 
 const serverSSL = "irc.chat.twitch.tv:443"
 
 func Run() {
-	var err error
 	_ = initPlugins()
-	db.Up()
-	defer db.Down()
-	context.Conf, err = godotenv.Read()
+	p := &db.Pool{
+		DbFile:       "gotbot.db",
+		PluginDbFile: "gotbotPlugins.db",
+	}
+	p.Up()
+	defer p.Down()
+	cfg, err := godotenv.Read()
+	rs := &res.Vars{
+		Conf:      cfg,
+		Constants: res.GetConst(),
+	}
 	checkErr(err)
-	tw, err := connectToTwitch()
+	tw, err := connectToTwitch(p, rs)
 	checkErr(err)
 	tw.Connection.Loop()
 }
-func connectToTwitch() (twitch.Client, error) {
-	botNick := context.Conf["TWITCH_USER"]
-	oauth := context.Conf["OAUTH"]
-	debug, debugErr := strconv.ParseBool(context.Conf["DEBUG"])
+
+func connectToTwitch(p *db.Pool, rs *res.Vars) (twitch.Client, error) {
+	botNick := rs.Conf["TWITCH_USER"]
+	oauth := rs.Conf["OAUTH"]
+	debug, debugErr := strconv.ParseBool(rs.Conf["DEBUG"])
 	if debugErr != nil {
 		debug = false
 	}
-	tw := twitch.Init(oauth, botNick, context.CommandQueueName, debug)
+	tw := twitch.Init(oauth, botNick, rs.Constants.CommandQueueName, debug, p, rs)
 	if err := tw.Connection.Connect(serverSSL); err != nil {
 		return twitch.Client{}, err
 	}
-	queue.NewQueue(context.CommandQueueName)
-	go queue.HandleCommand(queue.JobQueue[context.CommandQueueName], tw.Connection)
+	queue.NewQueue(rs.Constants.CommandQueueName)
+	go queue.HandleCommand(queue.JobQueue[rs.Constants.CommandQueueName], tw.Connection, p, rs)
 	tw.Connect()
 	return tw, nil
 }
+
 func initPlugins() (error) {
 	files, err := ioutil.ReadDir("./custom/plugins")
 	if err != nil {

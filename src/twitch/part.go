@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 	"github.com/3stadt/GoTBot/src/structs"
-	"github.com/3stadt/GoTBot/src/db"
 )
 
 func (c *Client) Part(e *irc.Event) {
@@ -14,7 +13,7 @@ func (c *Client) Part(e *irc.Event) {
 		return
 	}
 	now := time.Now()
-	err := db.CreateOrUpdateUser(structs.User{
+	err := c.Pool.CreateOrUpdateUser(structs.User{
 		Name:     nick,
 		LastPart: &now,
 	})

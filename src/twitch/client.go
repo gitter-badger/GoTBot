@@ -3,6 +3,8 @@ package twitch
 import (
 	"github.com/thoj/go-ircevent"
 	"strings"
+	"github.com/3stadt/GoTBot/src/res"
+	"github.com/3stadt/GoTBot/src/db"
 )
 
 type Client struct {
@@ -10,12 +12,16 @@ type Client struct {
 	Nick             string
 	Moderators       []string
 	CommandQueueName string
+	Vars             *res.Vars
+	Pool             *db.Pool
 }
 
-func Init(oauth string, nick string, commandQueueName string, debug bool) Client {
+func Init(oauth string, nick string, commandQueueName string, debug bool, p *db.Pool, res *res.Vars) Client {
 	client := Client{
 		Connection: irc.IRC(nick, nick),
 		Nick:       nick,
+		Vars:       res,
+		Pool:       p,
 	}
 	client.Connection.Password = oauth
 	client.CommandQueueName = commandQueueName

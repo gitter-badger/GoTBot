@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"github.com/3stadt/GoTBot/src/db"
 	"github.com/3stadt/GoTBot/src/errors"
-	"github.com/3stadt/GoTBot/src/context"
 	"path/filepath"
+	"github.com/3stadt/GoTBot/src/res"
 )
 
-func JsPluginHandler(filePath string, channel string, sender string, params string, connection *irc.Connection) error {
+func JsPlugin(filePath string, channel string, sender string, params string, connection *irc.Connection, p *db.Pool, v *res.Vars) error {
 	var err error
 	var jsData []byte
 	var bucketName = filepath.Base(filePath)
@@ -45,7 +45,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		if err != nil {
 			return result
 		}
-		result, _ = vm.ToValue(*getBoltUserAsJson(username))
+		result, _ = vm.ToValue(*getBoltUserAsJson(username, p))
 		return result
 	})
 
@@ -56,7 +56,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 			data := call.Argument(1)
 			var dataMap map[string]interface{}
 			json.Unmarshal([]byte(data.String()), &dataMap)
-			context.PluginDB.Set(bucketName, key, dataMap)
+			p.PluginDB.Set(bucketName, key, dataMap)
 			return result
 		}
 		failure := fail.NotEnoughArgs{Min: 2}
@@ -68,7 +68,7 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 		if len(call.ArgumentList) == 1 {
 			key := call.Argument(0)
 			var data map[string]interface{}
-			if err := context.PluginDB.Get(bucketName, key, &data); err != nil {
+			if err := p.PluginDB.Get(bucketName, key, &data); err != nil {
 				fmt.Println("Error:")
 				fmt.Println(err)
 				return result
@@ -92,9 +92,9 @@ func JsPluginHandler(filePath string, channel string, sender string, params stri
 	return nil
 }
 
-func getBoltUserAsJson(username string) *string {
+func getBoltUserAsJson(username string, p *db.Pool) *string {
 	emptyJson := "{}"
-	userStruct, err := db.GetUser(username)
+	userStruct, err := p.GetUser(username)
 	if err != nil {
 		return &emptyJson
 	}

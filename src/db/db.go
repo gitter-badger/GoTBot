@@ -2,7 +2,6 @@ package db
 
 import (
 	"github.com/asdine/storm"
-	"github.com/3stadt/GoTBot/src/context"
 	"github.com/3stadt/GoTBot/src/structs"
 	"github.com/imdario/mergo"
 	"github.com/3stadt/GoTBot/src/errors"
@@ -10,39 +9,53 @@ import (
 	"strings"
 )
 
-func Up() {
-	var err error
-	context.DB, err = storm.Open(context.DbFile)
-	if err != nil {
-		panic(err)
-	}
-	context.PluginDB, err = storm.Open(context.PluginDbFile)
-	if err != nil {
-		panic(err)
-	}
-	context.Users = context.DB.From("users")
+type Pool struct {
+	DB             *storm.DB
+	PluginDB       *storm.DB
+	Users          *storm.Node
+	UserBucketName string
+	DbFile         string
+	PluginDbFile   string
 }
 
-func Down() {
-	context.DB.Close()
-	context.PluginDB.Close()
+func (p *Pool) Up() (err error) {
+	p.UserBucketName = "users"
+	p.DB, err = storm.Open(p.DbFile)
+	if err != nil {
+		return err
+	}
+	p.PluginDB, err = storm.Open(p.PluginDbFile)
+	if err != nil {
+		return err
+	}
+	db := p.DB
+	users := db.From("users")
+	p.Users = &users
+	return nil
 }
 
-func UpdateUser(user structs.User) error {
+func (p *Pool) Down() {
+	p.DB.Close()
+	p.PluginDB.Close()
+}
+
+func (p *Pool) UpdateUser(user structs.User) error {
 	baseUser := structs.User{}
-	err := context.Users.Get(context.UserBucketName, user.Name, &baseUser)
+	userNode := *p.Users
+	err := userNode.Get(p.UserBucketName, user.Name, &baseUser)
 	if err != nil {
 		return &fail.NoTargetUser{Name: user.Name}
 	}
 	mergo.MergeWithOverwrite(&baseUser, user)
-	return SetUser(baseUser)
+	return p.SetUser(baseUser)
 }
 
-func UpdateMessageCount(nick string) error {
+func (p *Pool) UpdateMessageCount(nick string) error {
 	user := structs.User{}
-	err := context.Users.Get(context.UserBucketName, nick, &user)
+	userNode := *p.Users
+	err := userNode.Get(p.UserBucketName, nick, &user)
 	if err != nil {
-		return CreateUser(structs.User{
+		return p.CreateUser(structs.User{
 			Name:         nick,
 			MessageCount: 1,
 		})
@@ -50,13 +63,13 @@ func UpdateMessageCount(nick string) error {
 	now := time.Now()
 	user.MessageCount++
 	user.LastActive = &now
-	SetUser(user)
+	p.SetUser(user)
 	return nil
 }
 
-func CreateUser(user structs.User) error {
+func (p *Pool) CreateUser(user structs.User) error {
 	fillDates(&user)
-	return SetUser(user)
+	return p.SetUser(user)
 }
 
 func fillDates(user *structs.User) {
@@ -72,29 +85,32 @@ func fillDates(user *structs.User) {
 	}
 }
 
-func CreateOrUpdateUser(user structs.User) error {
+func (p *Pool) CreateOrUpdateUser(user structs.User) error {
 	baseUser := structs.User{}
-	err := context.Users.Get(context.UserBucketName, user.Name, &baseUser)
+	userNode := *p.Users
+	err := userNode.Get(p.UserBucketName, user.Name, &baseUser)
 	if err != nil {
-		return SetUser(user)
+		return p.SetUser(user)
 	}
 	mergo.MergeWithOverwrite(&baseUser, user)
-	return SetUser(baseUser)
+	return p.SetUser(baseUser)
 }
 
-func GetUser(name string) (*structs.User, error) {
+func (p *Pool) GetUser(name string) (*structs.User, error) {
 	user := structs.User{}
-	err := context.Users.Get(context.UserBucketName, name, &user)
+	userNode := *p.Users
+	err := userNode.Get(p.UserBucketName, name, &user)
 	return &user, err
 }
 
-func SetUser(user structs.User) error {
+func (p *Pool) SetUser(user structs.User) error {
 	if strings.TrimSpace(user.Name) == "" {
 		return &fail.InvalidStruct{MissingFields: []string{"Name"}}
 	}
 	if user.MessageCount < 0 {
 		user.MessageCount = 0
 	}
-	err := context.Users.Set(context.UserBucketName, user.Name, user)
+	userNode := *p.Users
+	err := userNode.Set(p.UserBucketName, user.Name, user)
 	return err
 }

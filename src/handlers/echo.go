@@ -1,10 +1,6 @@
 package handlers
 
-import (
-	"github.com/thoj/go-ircevent"
-)
-
-func Echo(channel string, sender string, params string, connection *irc.Connection) error {
-	connection.Privmsg(channel, "Thanks's for sending goSay with '" + params + "' on " + channel + ", " + sender + "!")
+func (d *deps) Echo() error {
+	d.connection.Privmsg(d.channel, "Thanks's for sending goSay with '"+d.params+"' on "+d.channel+", "+d.sender+"!")
 	return nil
 }

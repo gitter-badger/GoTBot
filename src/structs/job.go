@@ -5,8 +5,8 @@ import "github.com/thoj/go-ircevent"
 type Job struct {
 	Command string
 	Channel string
-	Sender string
+	Sender  string
 	Message string
-	Params string
-	Event *irc.Event
+	Params  string
+	Event   *irc.Event
 }

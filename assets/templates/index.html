@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://unpkg.com/vue@2.4.2/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <title>GoTBot</title>
+</head>
+<body>
+
+<div id="app">
+    <p>{{ message }}</p>
+    <button v-on:click="updatemessage">Update Message</button>
+    <hr>
+    <button v-on:click="connecttwitch">Connect to twitch</button>
+    <hr>
+    <button v-on:click="disconnecttwitch">Disconnect from twitch</button>
+    <hr>
+    <pre>{{ logmessage }}</pre>
+</div>
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello Twitch!',
+            logmessage: '[Log messages appear here.]'
+        },
+        methods: {
+            updatemessage: function () {
+                var me = this;
+                axios.get('/sampleMessage')
+                    .then(function (response) {
+                        console.log(response);
+                        me.message = response.data.message;
+                    });
+            },
+            connecttwitch: function () {
+                var me = this;
+                axios.post('/twitch/connect')
+                    .then(function (response) {
+                        me.logmessage = response.data.message;
+                    });
+            },
+            disconnecttwitch: function () {
+                var me = this;
+                axios.post('/twitch/disconnect')
+                    .then(function (response) {
+                        me.logmessage = response.data.message;
+                    });
+            }
+        }
+    })
+</script>
+</body>
+</html>

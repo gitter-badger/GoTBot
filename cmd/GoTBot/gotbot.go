@@ -2,7 +2,6 @@ package GoTBot
 
 import (
 	"github.com/3stadt/GoTBot/src/structs"
-	"github.com/joho/godotenv"
 	"log"
 	"github.com/3stadt/GoTBot/src/queue"
 	"github.com/3stadt/GoTBot/src/handlers"
@@ -13,6 +12,10 @@ import (
 	"github.com/3stadt/GoTBot/src/db"
 	"github.com/3stadt/GoTBot/src/twitch"
 	"github.com/3stadt/GoTBot/src/res"
+	"github.com/gin-gonic/gin"
+	"time"
+	"net/http"
+	"github.com/joho/godotenv"
 )
 
 const serverSSL = "irc.chat.twitch.tv:443"
@@ -25,15 +28,47 @@ func Run() {
 	}
 	p.Up()
 	defer p.Down()
-	cfg, err := godotenv.Read()
-	rs := &res.Vars{
-		Conf:      cfg,
-		Constants: res.GetConst(),
-	}
-	checkErr(err)
-	tw, err := connectToTwitch(p, rs)
-	checkErr(err)
-	tw.Connection.Loop()
+
+	r := gin.Default()
+	
+	r.Delims("{[{", "}]}")
+	r.LoadHTMLGlob("assets/templates/*")
+
+	r.GET("/sampleMessage", func(c *gin.Context) {
+		t := time.Now()
+		c.JSON(200, gin.H{
+			"message": "Hello Twitch! The button was last clicked at " + t.Format("15:04:05"),
+		})
+	})
+
+	r.GET("/twitch/disconnect", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Not yet implemented",
+		})
+	})
+
+	r.POST("/twitch/connect", func(c *gin.Context) {
+		cfg, err := godotenv.Read()
+		rs := &res.Vars{
+			Conf:      cfg,
+			Constants: res.GetConst(),
+		}
+		checkErr(err)
+		tw, err := connectToTwitch(p, rs)
+		checkErr(err)
+		go tw.Connection.Loop()
+		c.JSON(200, gin.H{
+			"message": "Connected",
+		})
+	})
+
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"title": "GoTBot",
+		})
+	})
+
+	r.Run() // listen and serve on 0.0.0.0:8080
 }
 
 func connectToTwitch(p *db.Pool, rs *res.Vars) (twitch.Client, error) {
